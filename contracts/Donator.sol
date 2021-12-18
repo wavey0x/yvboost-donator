@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 interface IVault {
-    function withdraw(uint256, address, uint256) external view returns (uint256);
+    function withdraw(uint256, address, uint256) external returns (uint256);
 }
 
 import "@openzeppelin/contracts/math/Math.sol";
@@ -16,7 +16,7 @@ contract Donator {
     using Address for address;
     using SafeMath for uint256;
 
-    event Donated(uint256 amountBunred, uint256 amountDonated);
+    event Donated(uint256 amountBurned, uint256 amountDonated);
 
     address public governance;
     address public pendingGovernance;
@@ -35,14 +35,14 @@ contract Donator {
         return block.timestamp > lastDonateTime.add(donateInterval);
     }
 
-    function donate() public {
+    function donate() external {
         require(canDonate(), "Too soon");
         uint256 balance = IERC20(yvBoost).balanceOf(address(this));
         require(balance > 0, "Nothing to donate");
         uint256 toBurn = Math.min(balance, maxBurnAmount);
         uint256 amountDonated = IVault(yvBoost).withdraw(toBurn, yvBoost, 0);
         lastDonateTime = block.timestamp;
-        emit Donated(maxBurnAmount, amountDonated);
+        emit Donated(toBurn, amountDonated);
     }
 
     function setMaxBurnAmount(uint256 _maxBurnAmount) public {

@@ -1,26 +1,30 @@
 import pytest
+import brownie
 from brownie import config, Contract, accounts, interface
 from brownie import network
 
 
 def test_operation(donator, sms, ychad, yvboost, rando):
     yvboost = interface.IVault(yvboost)
+    starting_total_supply = yvboost.totalSupply()
     yveCrv = Contract(yvboost.token())
     starting_bal_donator = yvboost.balanceOf(donator)
-    starting_bal_yvboost = yveCrv.balanceOf(yvboost)
+    starting_bal_yveCrv = yveCrv.balanceOf(yvboost)
+
     tx = donator.donate({"from":rando})
     print(tx.events["Donated"])
     with brownie.reverts():
         donator.donate({"from":rando})
-    assert tx["Donated"]["amountBurned"] == starting_bal_donator - yvboost.balanceOf(donator)
-    assert tx["Donated"]["amountDonated"] == starting_bal_yvboost - yveCrv.balanceOf(yvboost)
+    assert tx.events["Donated"]["amountBurned"] == starting_total_supply - yvboost.totalSupply()
+    assert tx.events["Donated"]["amountBurned"] == starting_bal_donator - yvboost.balanceOf(donator)
+    assert yveCrv.balanceOf(yvboost) >= starting_bal_yveCrv
 
 def test_change_gov(donator, sms, ychad, yvboost, rando):
     with brownie.reverts():
         donator.setGovernance(rando, {"from":rando})
     donator.setGovernance(ychad, {"from":sms})
     assert donator.governance() == sms
-    donator.acceptGonvernance({"from":ychad})
+    donator.acceptGovernance({"from":ychad})
 
 def test_sweep(donator, sms, ychad, yvboost, dai, rando):
     before_balance = dai.balanceOf(sms)

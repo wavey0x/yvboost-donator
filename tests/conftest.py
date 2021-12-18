@@ -2,6 +2,9 @@ import pytest, web3
 from brownie import config, Contract, accounts
 from brownie import network
 
+@pytest.fixture(autouse=True)
+def isolation(fn_isolation):
+    pass
 
 @pytest.fixture
 def sms(accounts, web3):
@@ -26,7 +29,7 @@ def rando(accounts):
 @pytest.fixture
 def donator(Donator, rando, sms, yvboost):
     donator = rando.deploy(Donator)
-    yvboost.transfer(donator, yvboost.balanceOf(sms), {"from":sms})
+    tx = yvboost.transfer(donator, yvboost.balanceOf(sms), {"from":sms})
     assert yvboost.balanceOf(donator) > 0
     yield donator
 
