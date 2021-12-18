@@ -22,11 +22,11 @@ contract Donator {
     address public pendingGovernance;
     uint256 public donateInterval;
     uint256 public maxBurnAmount;
-    uint256 public lastDonateTime = 0;
-    address public yvBoost = address(0x9d409a0A012CFbA9B15F6D4B36Ac57A46966Ab9a);
+    uint256 public lastDonateTime;
+    address internal constant yvBoost = 0x9d409a0A012CFbA9B15F6D4B36Ac57A46966Ab9a;
 
     constructor() public {
-        governance = address(0x16388463d60FFE0661Cf7F1f31a7D658aC790ff7);
+        governance = 0x16388463d60FFE0661Cf7F1f31a7D658aC790ff7;
         donateInterval = 60 * 60 * 24 * 2;
         maxBurnAmount = 50_000e18;
     }
