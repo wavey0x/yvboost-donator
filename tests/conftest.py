@@ -29,8 +29,6 @@ def rando(accounts):
 @pytest.fixture
 def donator(Donator, rando, sms, yvboost):
     donator = rando.deploy(Donator)
-    tx = yvboost.transfer(donator, yvboost.balanceOf(sms), {"from":sms})
-    assert yvboost.balanceOf(donator) > 0
     yield donator
 
 @pytest.fixture

@@ -56,12 +56,12 @@ contract Donator {
     }
 
     function setGovernance(address _governance) external {
-        require(msg.sender == governance,"!authorized");
+        require(msg.sender == governance, "!authorized");
         pendingGovernance = _governance;
     }
 
     function acceptGovernance() external {
-        require(msg.sender == pendingGovernance);
+        require(msg.sender == pendingGovernance, "!authorized");
         governance = pendingGovernance;
     }
 
