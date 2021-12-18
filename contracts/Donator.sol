@@ -20,9 +20,9 @@ contract Donator {
 
     address public governance;
     address public pendingGovernance;
-    uint256 public donateInterval;
-    uint256 public maxBurnAmount;
-    uint256 public lastDonateTime;
+    uint256 public donateInterval; // how much time is required between donations
+    uint256 public maxBurnAmount; // maximum amount of yvBOOST we can donate (burn for yveCRV)
+    uint256 public lastDonateTime; // most recent donation
     address internal constant yvBoost = 0x9d409a0A012CFbA9B15F6D4B36Ac57A46966Ab9a;
 
     constructor() public {
@@ -30,11 +30,13 @@ contract Donator {
         donateInterval = 60 * 60 * 24 * 2;
         maxBurnAmount = 50_000e18;
     }
-
+    
+    // check if enough time has elapsed since our last donation
     function canDonate() public view returns (bool) {
         return block.timestamp > lastDonateTime.add(donateInterval);
     }
-
+    
+    // donate our allowed limit of yvBOOST if it has been long enough since our last donation
     function donate() external {
         require(canDonate(), "Too soon");
         uint256 balance = IERC20(yvBoost).balanceOf(address(this));
@@ -44,12 +46,14 @@ contract Donator {
         lastDonateTime = block.timestamp;
         emit Donated(toBurn, amountDonated);
     }
-
+    
+    // set how much we can donate per donateInterval
     function setMaxBurnAmount(uint256 _maxBurnAmount) public {
         require(msg.sender == governance,"!authorized");
         maxBurnAmount = _maxBurnAmount;
     }
-
+    
+    // adjust how long we must wait before resetting our maxBurnAmount
     function setDonateInterval(uint256 _donateInterval) public {
         require(msg.sender == governance, "!authorized");
         donateInterval = _donateInterval;
@@ -64,7 +68,8 @@ contract Donator {
         require(msg.sender == pendingGovernance, "!authorized");
         governance = pendingGovernance;
     }
-
+    
+    // sweep function in case anyone sends random tokens here or we need to rescue yvBOOST
     function sweep(address _token) external {
         require(msg.sender == governance, "!authorized");
         IERC20(_token).safeTransfer(address(governance), IERC20(_token).balanceOf(address(this)));
