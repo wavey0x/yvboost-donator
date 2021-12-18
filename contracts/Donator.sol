@@ -31,12 +31,18 @@ contract Donator {
         maxBurnAmount = 50_000e18;
     }
     
-    // check if enough time has elapsed since our last donation
+    /// @notice check if enough time has elapsed since our last donation
     function canDonate() public view returns (bool) {
         return block.timestamp > lastDonateTime.add(donateInterval);
     }
     
-    // donate our allowed limit of yvBOOST if it has been long enough since our last donation
+    /**
+     * @notice
+     *  Public function allowing anybody to burn yvBOOST and 
+     *  donate the underlying directly back to the vault. 
+     *  May only be called after time interval since previous donation 
+     *  has elapsed. Amount to burn is set via maxBurnAmount. 
+     */
     function donate() external {
         require(canDonate(), "Too soon");
         uint256 balance = IERC20(yvBoost).balanceOf(address(this));
@@ -47,13 +53,13 @@ contract Donator {
         emit Donated(toBurn, amountDonated);
     }
     
-    // set how much we can donate per donateInterval
+    /// @notice Set how much we can donate per donateInterval
     function setMaxBurnAmount(uint256 _maxBurnAmount) public {
         require(msg.sender == governance,"!authorized");
         maxBurnAmount = _maxBurnAmount;
     }
     
-    // adjust how long we must wait before resetting our maxBurnAmount
+    /// @notice Adjust how long we must wait before resetting our maxBurnAmount
     function setDonateInterval(uint256 _donateInterval) public {
         require(msg.sender == governance, "!authorized");
         donateInterval = _donateInterval;
@@ -69,7 +75,7 @@ contract Donator {
         governance = pendingGovernance;
     }
     
-    // sweep function in case anyone sends random tokens here or we need to rescue yvBOOST
+    /// @notice sweep function in case anyone sends random tokens here or we need to rescue yvBOOST
     function sweep(address _token) external {
         require(msg.sender == governance, "!authorized");
         IERC20(_token).safeTransfer(address(governance), IERC20(_token).balanceOf(address(this)));
