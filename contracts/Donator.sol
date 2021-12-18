@@ -6,8 +6,10 @@ import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 interface IVault {
-    function withdraw(uint256, address) external view returns (uint256);
+    function withdraw(uint256, address, uint256) external view returns (uint256);
 }
+
+import "@openzeppelin/contracts/math/Math.sol";
 
 contract Donator {
     using SafeERC20 for IERC20;
@@ -18,10 +20,10 @@ contract Donator {
 
     address public governance;
     address public pendingGovernance;
-    uint256 public lastDonateTime;
     uint256 public donateInterval;
     uint256 public maxBurnAmount;
-    uint256 public yvBoost;
+    uint256 public lastDonateTime = 0;
+    address public yvBoost = address(0x9d409a0A012CFbA9B15F6D4B36Ac57A46966Ab9a);
 
     constructor() public {
         governance = address(0x16388463d60FFE0661Cf7F1f31a7D658aC790ff7);
@@ -35,8 +37,11 @@ contract Donator {
 
     function donate() public {
         require(canDonate(), "Too soon");
-        require(IERC20(yvBoost).balanceOf(address(this)) > 0, "Nothing to donate");
-        uint256 amountDonated = IVault(yvBoost).withdraw(maxBurnAmount, address(yvBoost));
+        uint256 balance = IERC20(yvBoost).balanceOf(address(this));
+        require(balance > 0, "Nothing to donate");
+        uint256 toBurn = Math.min(balance, maxBurnAmount);
+        uint256 amountDonated = IVault(yvBoost).withdraw(toBurn, yvBoost, 0);
+        lastDonateTime = block.timestamp;
         emit Donated(maxBurnAmount, amountDonated);
     }
 
@@ -58,5 +63,10 @@ contract Donator {
     function acceptGovernance() external {
         require(msg.sender == pendingGovernance);
         governance = pendingGovernance;
+    }
+
+    function sweep(address _token) external {
+        require(msg.sender == governance, "!authorized");
+        IERC20(_token).safeTransfer(address(governance), IERC20(_token).balanceOf(address(this)));
     }
 }
