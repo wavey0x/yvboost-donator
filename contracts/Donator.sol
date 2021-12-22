@@ -23,6 +23,7 @@ contract Donator {
     uint256 public donateInterval; // how much time is required between donations
     uint256 public maxBurnAmount; // maximum amount of yvBOOST we can donate (burn for yveCRV)
     uint256 public lastDonateTime; // most recent donation
+    bool public publicDonationsEnabled = true;
     address internal constant yvBoost = 0x9d409a0A012CFbA9B15F6D4B36Ac57A46966Ab9a;
 
     constructor() public {
@@ -45,6 +46,9 @@ contract Donator {
      */
     function donate() external {
         require(canDonate(), "Too soon");
+        if(!publicDonationsEnabled){
+            require(msg.sender == governance, "!authorized");
+        }
         uint256 balance = IERC20(yvBoost).balanceOf(address(this));
         require(balance > 0, "Nothing to donate");
         uint256 toBurn = Math.min(balance, maxBurnAmount);
@@ -55,7 +59,7 @@ contract Donator {
     
     /// @notice Set how much we can donate per donateInterval
     function setMaxBurnAmount(uint256 _maxBurnAmount) public {
-        require(msg.sender == governance,"!authorized");
+        require(msg.sender == governance, "!authorized");
         maxBurnAmount = _maxBurnAmount;
     }
     
@@ -79,5 +83,10 @@ contract Donator {
     function sweep(address _token) external {
         require(msg.sender == governance, "!authorized");
         IERC20(_token).safeTransfer(address(governance), IERC20(_token).balanceOf(address(this)));
+    }
+
+    function togglePublicDonations() external {
+        require(msg.sender == governance, "!authorized");
+        publicDonationsEnabled = !publicDonationsEnabled;
     }
 }

@@ -5,9 +5,8 @@ from brownie import network
 
 
 def test_operation(donator, sms, ychad, yvboost, rando, chain):
-    tx = yvboost.transfer(donator, yvboost.balanceOf(sms), {"from":sms})
+    tx = yvboost.transfer(donator, yvboost.balanceOf(sms) / 2, {"from":sms})
     assert yvboost.balanceOf(donator) > 0
-    yvboost = interface.IVault(yvboost)
     starting_total_supply = yvboost.totalSupply()
     yveCrv = Contract(yvboost.token())
     starting_bal_donator = yvboost.balanceOf(donator)
@@ -17,13 +16,43 @@ def test_operation(donator, sms, ychad, yvboost, rando, chain):
     print(tx.events["Donated"])
     with brownie.reverts():
         donator.donate({"from":rando}) # Should fail due to too soon
-    chain.sleep(60 * 60 * 24 * 2)
+    chain.sleep(donator.donateInterval())
     chain.snapshot()
     donator.donate({"from":rando})
     chain.revert()
     assert tx.events["Donated"]["amountBurned"] == starting_total_supply - yvboost.totalSupply()
     assert tx.events["Donated"]["amountBurned"] == starting_bal_donator - yvboost.balanceOf(donator)
     assert yveCrv.balanceOf(yvboost) >= starting_bal_yveCrv
+
+def test_front_run(donator, sms, ychad, yvboost, rando, chain, yvecrv):
+    # Setup front runner to deposit
+    yvecrv_whale = accounts.at("0x1b9524b0F0b9F2e16b5F9e4baD331e01c2267981", force=True) # largest yveCRV holder who is not sushipool or strategy
+    front_runner = accounts[1]
+    yvecrv.transfer(front_runner, yvecrv.balanceOf(yvecrv_whale), {"from": yvecrv_whale})
+    yvecrv.approve(yvboost, 2**256-1, {"from": front_runner})
+    front_runner_beginning_balance = yvecrv.balanceOf(front_runner)
+    
+    # Move money to donation contract
+    tx = yvboost.transfer(donator, yvboost.balanceOf(sms) / 2, {"from":sms})
+    assert yvboost.balanceOf(donator) > 0
+
+    # Deposit and donate
+    yvboost.deposit({"from": front_runner})
+    before_pps = yvboost.pricePerShare()
+    tx = donator.donate({"from":rando})
+    print("pps gain",(yvboost.pricePerShare() - before_pps) / 1e18)
+    print(tx.events["Donated"])
+    with brownie.reverts():
+        donator.donate({"from":rando}) # Should fail due to too soon
+    chain.sleep(donator.donateInterval() + 1)
+    chain.mine(2)
+    chain.snapshot()
+    chain.mine(2)
+    donator.donate({"from":rando})
+    chain.revert()
+    yvboost.withdraw({"from": front_runner})
+    bal_diff = yvecrv.balanceOf(front_runner) - front_runner_beginning_balance
+    print("yveCRV gain for front runner", bal_diff / 1e18)
 
 def test_change_gov(donator, sms, ychad, yvboost, rando, chain):
     with brownie.reverts():
@@ -51,3 +80,14 @@ def test_set_max_burn_amount(donator, sms, ychad, yvboost, rando, chain):
         donator.setMaxBurnAmount(1_000, {"from":rando})
     donator.setMaxBurnAmount(100, {"from":sms})
     assert donator.maxBurnAmount() == 100
+
+def test_disable_public_donations(donator, sms, ychad, yvboost, rando, chain):
+    tx = yvboost.transfer(donator, yvboost.balanceOf(sms), {"from":sms})
+    with brownie.reverts():
+        donator.togglePublicDonations({"from":rando})
+    donator.togglePublicDonations({"from":sms})
+    chain.sleep(donator.donateInterval() + 1)
+    chain.mine(1)
+    with brownie.reverts():
+        donator.donate({"from":rando})
+    donator.donate({"from":sms})

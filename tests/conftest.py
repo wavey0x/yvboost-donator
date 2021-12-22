@@ -1,5 +1,5 @@
 import pytest, web3
-from brownie import config, Contract, accounts
+from brownie import config, Contract, accounts, interface
 from brownie import network
 
 @pytest.fixture(autouse=True)
@@ -16,7 +16,11 @@ def ychad(accounts, web3):
 
 @pytest.fixture
 def yvboost():
-    yield Contract("0x9d409a0A012CFbA9B15F6D4B36Ac57A46966Ab9a")
+    yield interface.IVault("0x9d409a0A012CFbA9B15F6D4B36Ac57A46966Ab9a")
+
+@pytest.fixture
+def yvecrv(yvboost):
+    yield Contract(yvboost.token())
 
 @pytest.fixture
 def rando(accounts):
