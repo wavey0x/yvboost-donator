@@ -20,9 +20,9 @@ contract Donator {
 
     address public governance;
     address public pendingGovernance;
-    uint256 public donateInterval; // how much time is required between donations
-    uint256 public maxBurnAmount; // maximum amount of yvBOOST we can donate (burn for yveCRV)
-    uint256 public lastDonateTime; // most recent donation
+    uint256 public donateInterval; /// @notice how much time is required between donations
+    uint256 public maxBurnAmount; /// @notice maximum amount of yvBOOST we can donate (burn for yveCRV)
+    uint256 public lastDonateTime; /// @notice most recent donation
     bool public publicDonationsEnabled = true;
     address internal constant yvBoost = 0x9d409a0A012CFbA9B15F6D4B36Ac57A46966Ab9a;
 
