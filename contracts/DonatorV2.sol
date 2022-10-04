@@ -28,7 +28,7 @@ contract Donator {
     uint256 public lastDonateTime;
     bool public donationsPaused;
 
-    constructor() public {
+    constructor() {
         governance = 0xFEB4acf3df3cDEA7399794D0869ef76A6EfAff52;
         management = 0x16388463d60FFE0661Cf7F1f31a7D658aC790ff7;
         strategy = 0xE7863292dd8eE5d215eC6D75ac00911D06E59B2d;
