@@ -47,7 +47,7 @@ contract Donator {
     function donate() external {
         address _strategy = strategy;
         require(msg.sender == _strategy, "!Strategy");
-        require(canDonate(), "Can't Donate");
+        if (!canDonate()) return;
         uint256 balance = IERC20(YCRV).balanceOf(address(this));
         if (balance == 0) return;
         uint amountDonated = Math.min(balance, donateAmount);
