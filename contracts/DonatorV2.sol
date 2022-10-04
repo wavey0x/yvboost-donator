@@ -1,10 +1,12 @@
-pragma solidity 0.6.12;
+pragma solidity ^0.8.0;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
-import "@openzeppelin/contracts/math/Math.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+
 
 interface IStrategy {
     function vault() external returns (address);
@@ -13,7 +15,6 @@ interface IStrategy {
 contract Donator {
     using SafeERC20 for IERC20;
     using Address for address;
-    using SafeMath for uint256;
 
     event Donated(address strategy, uint256 amount);
 
@@ -38,17 +39,18 @@ contract Donator {
     function canDonate() public view returns (bool) {
         return (
             !donationsPaused &&
-            block.timestamp > lastDonateTime.add(donateInterval)
+            block.timestamp > lastDonateTime + donateInterval
         );
     }
     
     function donate() external {
         address _strategy = strategy;
-        requires(msg.sender == _strategy, "!Strategy");
+        require(msg.sender == _strategy, "!Strategy");
         require(canDonate(), "Can't Donate");
         uint256 balance = IERC20(YCRV).balanceOf(address(this));
         if (balance == 0) return;
-        uint256 amountDonated = IERC20(YCRV).transfer(_strategy, Math.min(balance, donateAmount));
+        uint amountDonated = Math.min(balance, donateAmount);
+        IERC20(YCRV).transfer(_strategy, amountDonated);
         lastDonateTime = block.timestamp;
         emit Donated(_strategy, amountDonated);
     }
@@ -93,6 +95,6 @@ contract Donator {
     function sweep(address _token) external {
         require(msg.sender == governance, "!authorized");
         uint bal = IERC20(_token).balanceOf(address(this));
-        SafeERC20(_token).safeTransfer(address(governance), bal);
+        IERC20(_token).safeTransfer(address(governance), bal);
     }
 }
