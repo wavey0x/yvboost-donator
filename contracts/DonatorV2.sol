@@ -16,44 +16,43 @@ contract Donator {
     using SafeERC20 for IERC20;
     using Address for address;
 
-    event Donated(address strategy, uint256 amount);
+    event Donated(address strategy, uint256 amount, uint256 period);
 
+    uint internal constant WEEK = 60 * 60 * 24 * 7;
     address internal constant YCRV = 0xFCc5c47bE19d06BF83eB04298b026F81069ff65b;
     address public governance;
     address public management;
     address public strategy;
     address public pendingGovernance;
     uint256 public donateAmount;
-    uint256 public donateInterval;
-    uint256 public lastDonateTime;
+    uint256 public lastDonatePeriod;
     bool public donationsPaused;
 
     constructor() {
         governance = 0xFEB4acf3df3cDEA7399794D0869ef76A6EfAff52;
         management = 0x16388463d60FFE0661Cf7F1f31a7D658aC790ff7;
         strategy = 0xE7863292dd8eE5d215eC6D75ac00911D06E59B2d;
-        donateInterval = 60 * 60 * 24 * 5;
-        donateAmount = 20_000e18;
+        donateAmount = 50_000e18;
     }
     
     /// @notice check if enough time has elapsed since our last donation
     function canDonate() public view returns (bool) {
         return (
             !donationsPaused &&
-            block.timestamp > lastDonateTime + donateInterval
+            block.timestamp / WEEK * WEEK > lastDonatePeriod
         );
     }
     
     function donate() external {
-        address _strategy = strategy;
-        require(msg.sender == _strategy, "!Strategy");
         if (!canDonate()) return;
         uint256 balance = IERC20(YCRV).balanceOf(address(this));
         if (balance == 0) return;
         uint amountDonated = Math.min(balance, donateAmount);
+        address _strategy = strategy;
         IERC20(YCRV).transfer(_strategy, amountDonated);
-        lastDonateTime = block.timestamp;
-        emit Donated(_strategy, amountDonated);
+        uint currentPeriod = block.timestamp / WEEK * WEEK;
+        lastDonatePeriod = currentPeriod;
+        emit Donated(_strategy, amountDonated, currentPeriod);
     }
     
     function setDonateAmount(uint256 _donateAmount) public {
@@ -64,11 +63,6 @@ contract Donator {
     function setPaused(bool _paused) public {
         require(msg.sender == governance || msg.sender == management, "!authorized");
         donationsPaused = _paused;
-    }
-    
-    function setDonateInterval(uint256 _donateInterval) public {
-        require(msg.sender == governance, "!authorized");
-        donateInterval = _donateInterval;
     }
 
     function setGovernance(address _governance) external {
