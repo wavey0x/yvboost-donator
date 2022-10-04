@@ -32,7 +32,8 @@ contract Donator {
         governance = 0xFEB4acf3df3cDEA7399794D0869ef76A6EfAff52;
         management = 0x16388463d60FFE0661Cf7F1f31a7D658aC790ff7;
         strategy = 0xE7863292dd8eE5d215eC6D75ac00911D06E59B2d;
-        donateInterval = 60 * 60 * 24 * 2;
+        donateInterval = 60 * 60 * 24 * 5;
+        donateAmount = 20_000e18;
     }
     
     /// @notice check if enough time has elapsed since our last donation
